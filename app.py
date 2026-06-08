@@ -1,5 +1,6 @@
 import os
 import queue
+import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, scrolledtext
@@ -30,7 +31,6 @@ def _transcribe_worker(
             try:
                 model = WhisperModel(model_name, device="cuda", compute_type="float16")
             except Exception as cuda_exc:
-                import sys
                 print(f"[voxlate] CUDA unavailable ({cuda_exc}), falling back to CPU", file=sys.stderr)
                 model = WhisperModel(model_name, device="cpu", compute_type="int8")
             model_cache[model_name] = model
