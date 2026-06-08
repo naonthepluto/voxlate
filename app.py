@@ -129,16 +129,51 @@ class AppWindow:
         self.drop_frame.configure(bg="#313244")
         self.drop_label.configure(bg="#313244")
 
-        path = event.data.strip()
-        # tkinterdnd2 wraps paths with spaces in curly braces on Windows
-        if path.startswith("{") and path.endswith("}"):
-            path = path[1:-1]
+        raw = event.data.strip()
+        paths = self._parse_drop_paths(raw)
+
+        if len(paths) > 1:
+            self._set_status("Можно перетащить только один файл", color="#f38ba8")
+            self.root.after(3000, lambda: self._set_status("Готов"))
+            return
+
+        path = paths[0] if paths else raw
 
         if not is_supported(path):
             self._set_status("Неподдерживаемый формат файла", color="#f38ba8")
+            self.root.after(3000, lambda: self._set_status("Готов"))
             return
 
         self._start_transcription(path)
+
+    def _parse_drop_paths(self, data: str) -> list[str]:
+        """Parse tkinterdnd2 drop data into a list of file paths.
+
+        On Windows, paths with spaces are wrapped in curly braces:
+        {C:\\path with spaces\\file.mp3} or plain C:\\file.mp3
+        """
+        paths = []
+        data = data.strip()
+        i = 0
+        while i < len(data):
+            if data[i] == "{":
+                end = data.find("}", i)
+                if end == -1:
+                    paths.append(data[i + 1:])
+                    break
+                paths.append(data[i + 1:end])
+                i = end + 1
+            else:
+                # plain path (no spaces) — runs until next space or end
+                end = data.find(" ", i)
+                if end == -1:
+                    paths.append(data[i:])
+                    break
+                paths.append(data[i:end])
+                i = end + 1
+            data_rest = data[i:].strip()
+            i = len(data) - len(data_rest)
+        return [p for p in paths if p]
 
     # ── Copy ──────────────────────────────────────────────────────────────────
 
