@@ -16,6 +16,36 @@ def is_supported(path: str) -> bool:
     return os.path.splitext(path)[1].lower() in SUPPORTED_EXTENSIONS
 
 
+def _transcribe_worker(
+    path: str,
+    model_name: str,
+    model_cache: dict,
+    result_queue: queue.Queue,
+) -> None:
+    try:
+        result_queue.put(("progress", f"Загрузка модели {model_name}..."))
+
+        if model_name not in model_cache:
+            model_cache.clear()
+            try:
+                model = WhisperModel(model_name, device="cuda", compute_type="float16")
+            except Exception:
+                model = WhisperModel(model_name, device="cpu", compute_type="int8")
+            model_cache[model_name] = model
+        else:
+            model = model_cache[model_name]
+
+        result_queue.put(("progress", "Транскрипция..."))
+
+        segments, info = model.transcribe(path, beam_size=5)
+        text = " ".join(segment.text.strip() for segment in segments)
+
+        result_queue.put(("result", text if text else "(пустой результат)"))
+
+    except Exception as exc:
+        result_queue.put(("error", str(exc)))
+
+
 class AppWindow:
     def __init__(self, root: TkinterDnD.Tk):
         self.root = root
@@ -198,13 +228,41 @@ class AppWindow:
         self.text_area.configure(state="disabled")
 
     def _start_transcription(self, path: str):
-        pass  # implemented in Task 4
+        if self._worker and self._worker.is_alive():
+            self._set_status("Уже выполняется транскрипция...", color="#fab387")
+            return
+
+        model_name = self.model_var.get()
+        self.drop_label.configure(text="Транскрибируется...")
+        self._set_status("Запуск...", color="#89dceb")
+
+        self._worker = threading.Thread(
+            target=_transcribe_worker,
+            args=(path, model_name, self._model_cache, self._queue),
+            daemon=True,
+        )
+        self._worker.start()
 
     # ── Poll queue (Task 4) ───────────────────────────────────────────────────
 
     def _poll_queue(self):
-        # Called once from __init__; reschedules itself via self.root.after(100, ...) — implemented in Task 4.
-        pass
+        try:
+            while True:
+                msg_type, payload = self._queue.get_nowait()
+                if msg_type == "result":
+                    self._set_text(payload)
+                    self._set_status("Готово")
+                    self.drop_frame.configure(bg="#313244")
+                    self.drop_label.configure(text="Перетащи аудиофайл сюда")
+                elif msg_type == "error":
+                    self._set_text(f"Ошибка: {payload}")
+                    self._set_status("Ошибка", color="#f38ba8")
+                    self.drop_label.configure(text="Перетащи аудиофайл сюда")
+                elif msg_type == "progress":
+                    self._set_status(payload, color="#89dceb")
+        except queue.Empty:
+            pass
+        self.root.after(100, self._poll_queue)
 
 
 if __name__ == "__main__":
