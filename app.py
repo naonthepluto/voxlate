@@ -115,12 +115,58 @@ class AppWindow:
         )
         self.copy_btn.pack(fill="x", padx=16, pady=(0, 16))
 
-    # ── Stubs for Tasks 3 and 4 ───────────────────────────────────────────────
+    # ── Drag & drop handlers ──────────────────────────────────────────────────
 
-    def _on_drop(self, event): pass
-    def _on_drag_enter(self, event): pass
-    def _on_drag_leave(self, event): pass
-    def _copy_to_clipboard(self): pass
+    def _on_drag_enter(self, event):
+        self.drop_frame.configure(bg="#45475a")
+        self.drop_label.configure(bg="#45475a")
+
+    def _on_drag_leave(self, event):
+        self.drop_frame.configure(bg="#313244")
+        self.drop_label.configure(bg="#313244")
+
+    def _on_drop(self, event):
+        self.drop_frame.configure(bg="#313244")
+        self.drop_label.configure(bg="#313244")
+
+        path = event.data.strip()
+        # tkinterdnd2 wraps paths with spaces in curly braces on Windows
+        if path.startswith("{") and path.endswith("}"):
+            path = path[1:-1]
+
+        if not is_supported(path):
+            self._set_status("Неподдерживаемый формат файла", color="#f38ba8")
+            return
+
+        self._start_transcription(path)
+
+    # ── Copy ──────────────────────────────────────────────────────────────────
+
+    def _copy_to_clipboard(self):
+        text = self.text_area.get("1.0", "end-1c")
+        if text.strip():
+            self.root.clipboard_clear()
+            self.root.clipboard_append(text)
+            self._set_status("Скопировано!", color="#a6e3a1")
+            self.root.after(2000, lambda: self._set_status("Готов"))
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _set_status(self, message: str, color: str = "#a6e3a1"):
+        self.status_var.set(message)
+        self.status_label.configure(fg=color)
+
+    def _set_text(self, text: str):
+        self.text_area.configure(state="normal")
+        self.text_area.delete("1.0", "end")
+        self.text_area.insert("1.0", text)
+        self.text_area.configure(state="disabled")
+
+    def _start_transcription(self, path: str):
+        pass  # implemented in Task 4
+
+    # ── Poll queue (Task 4) ───────────────────────────────────────────────────
+
     def _poll_queue(self):
         # Called once from __init__; reschedules itself via self.root.after(100, ...) — implemented in Task 4.
         pass
