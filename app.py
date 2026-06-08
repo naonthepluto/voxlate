@@ -1,3 +1,4 @@
+import os
 import queue
 import threading
 import tkinter as tk
@@ -12,12 +13,12 @@ SUPPORTED_EXTENSIONS = {
 }
 
 def is_supported(path: str) -> bool:
-    import os
     return os.path.splitext(path)[1].lower() in SUPPORTED_EXTENSIONS
 
 
 class AppWindow:
-    pass  # implemented in later tasks
+    def __init__(self, root):
+        pass  # implemented in later tasks
 
 
 if __name__ == "__main__":
