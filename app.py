@@ -48,6 +48,31 @@ def _transcribe_worker(
         result_queue.put(("error", str(exc)))
 
 
+def _parse_drop_paths(data: str) -> list[str]:
+    """Parse tkinterdnd2 drop data into a list of file paths."""
+    paths = []
+    data = data.strip()
+    i = 0
+    while i < len(data):
+        if data[i] == "{":
+            end = data.find("}", i)
+            if end == -1:
+                paths.append(data[i + 1:])
+                break
+            paths.append(data[i + 1:end])
+            i = end + 1
+        else:
+            end = data.find(" ", i)
+            if end == -1:
+                paths.append(data[i:])
+                break
+            paths.append(data[i:end])
+            i = end + 1
+        data_rest = data[i:].strip()
+        i = len(data) - len(data_rest)
+    return [p for p in paths if p]
+
+
 class AppWindow:
     def __init__(self, root: TkinterDnD.Tk):
         self.root = root
@@ -85,10 +110,11 @@ class AppWindow:
         )
         self.drop_label.pack(expand=True)
 
-        self.drop_frame.drop_target_register(DND_FILES)
-        self.drop_frame.dnd_bind("<<Drop>>", self._on_drop)
-        self.drop_frame.dnd_bind("<<DragEnter>>", self._on_drag_enter)
-        self.drop_frame.dnd_bind("<<DragLeave>>", self._on_drag_leave)
+        for widget in (self.drop_frame, self.drop_label):
+            widget.drop_target_register(DND_FILES)
+            widget.dnd_bind("<<Drop>>", self._on_drop)
+            widget.dnd_bind("<<DragEnter>>", self._on_drag_enter)
+            widget.dnd_bind("<<DragLeave>>", self._on_drag_leave)
 
     # ── Controls ─────────────────────────────────────────────────────────────
 
@@ -185,33 +211,7 @@ class AppWindow:
         self._start_transcription(path)
 
     def _parse_drop_paths(self, data: str) -> list[str]:
-        """Parse tkinterdnd2 drop data into a list of file paths.
-
-        On Windows, paths with spaces are wrapped in curly braces:
-        {C:\\path with spaces\\file.mp3} or plain C:\\file.mp3
-        """
-        paths = []
-        data = data.strip()
-        i = 0
-        while i < len(data):
-            if data[i] == "{":
-                end = data.find("}", i)
-                if end == -1:
-                    paths.append(data[i + 1:])
-                    break
-                paths.append(data[i + 1:end])
-                i = end + 1
-            else:
-                # plain path (no spaces) — runs until next space or end
-                end = data.find(" ", i)
-                if end == -1:
-                    paths.append(data[i:])
-                    break
-                paths.append(data[i:end])
-                i = end + 1
-            data_rest = data[i:].strip()
-            i = len(data) - len(data_rest)
-        return [p for p in paths if p]
+        return _parse_drop_paths(data)
 
     # ── Copy ──────────────────────────────────────────────────────────────────
 

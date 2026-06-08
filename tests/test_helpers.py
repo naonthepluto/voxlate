@@ -1,7 +1,7 @@
 import sys, os
 import queue
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from app import is_supported, MODELS, SUPPORTED_EXTENSIONS
+from app import is_supported, MODELS, SUPPORTED_EXTENSIONS, _parse_drop_paths
 
 def test_supported_extensions():
     assert is_supported("audio.mp3")
@@ -37,3 +37,20 @@ def test_queue_progress_message():
     msg_type, payload = q.get_nowait()
     assert msg_type == "progress"
     assert "small" in payload
+
+
+def test_parse_single_plain_path():
+    assert _parse_drop_paths("C:\\audio\\file.mp3") == ["C:\\audio\\file.mp3"]
+
+def test_parse_single_braced_path():
+    assert _parse_drop_paths("{C:\\path with spaces\\file.mp3}") == ["C:\\path with spaces\\file.mp3"]
+
+def test_parse_multiple_braced_paths():
+    result = _parse_drop_paths("{C:\\a.mp3} {C:\\b.wav}")
+    assert result == ["C:\\a.mp3", "C:\\b.wav"]
+
+def test_parse_empty_data():
+    assert _parse_drop_paths("") == []
+
+def test_parse_whitespace_only():
+    assert _parse_drop_paths("   ") == []
