@@ -84,11 +84,11 @@ class AppWindow:
     # ── Text area ─────────────────────────────────────────────────────────────
 
     def _build_text_area(self):
-        text_frame = tk.Frame(self.root, bg="#1e1e2e")
-        text_frame.pack(fill="both", expand=True, padx=16, pady=(0, 8))
+        self.text_frame = tk.Frame(self.root, bg="#1e1e2e")
+        self.text_frame.pack(fill="both", expand=True, padx=16, pady=(0, 8))
 
         self.text_area = scrolledtext.ScrolledText(
-            text_frame,
+            self.text_frame,
             wrap="word",
             font=("Segoe UI", 12),
             bg="#181825",
@@ -102,7 +102,7 @@ class AppWindow:
         self.text_area.pack(fill="both", expand=True)
 
         self.copy_btn = tk.Button(
-            self.root,
+            self.text_frame,
             text="Копировать в буфер",
             font=("Segoe UI", 11),
             bg="#89b4fa",
@@ -121,7 +121,9 @@ class AppWindow:
     def _on_drag_enter(self, event): pass
     def _on_drag_leave(self, event): pass
     def _copy_to_clipboard(self): pass
-    def _poll_queue(self): pass
+    def _poll_queue(self):
+        # Called once from __init__; reschedules itself via self.root.after(100, ...) — implemented in Task 4.
+        pass
 
 
 if __name__ == "__main__":
