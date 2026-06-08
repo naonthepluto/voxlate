@@ -29,7 +29,9 @@ def _transcribe_worker(
             model_cache.clear()
             try:
                 model = WhisperModel(model_name, device="cuda", compute_type="float16")
-            except Exception:
+            except Exception as cuda_exc:
+                import sys
+                print(f"[voxlate] CUDA unavailable ({cuda_exc}), falling back to CPU", file=sys.stderr)
                 model = WhisperModel(model_name, device="cpu", compute_type="int8")
             model_cache[model_name] = model
         else:
@@ -57,6 +59,8 @@ class AppWindow:
         self._queue: queue.Queue = queue.Queue()
         self._model_cache: dict = {}  # {"model_name": WhisperModel instance}
         self._worker: threading.Thread | None = None
+        self._running: bool = True
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self._build_drop_zone()
         self._build_controls()
@@ -144,6 +148,10 @@ class AppWindow:
             pady=6,
         )
         self.copy_btn.pack(fill="x", padx=16, pady=(0, 16))
+
+    def _on_close(self):
+        self._running = False
+        self.root.destroy()
 
     # ── Drag & drop handlers ──────────────────────────────────────────────────
 
@@ -262,7 +270,8 @@ class AppWindow:
                     self._set_status(payload, color="#89dceb")
         except queue.Empty:
             pass
-        self.root.after(100, self._poll_queue)
+        if self._running:
+            self.root.after(100, self._poll_queue)
 
 
 if __name__ == "__main__":
