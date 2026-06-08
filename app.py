@@ -78,6 +78,7 @@ class AppWindow:
         self.root = root
         self.root.title("Voxlate — Транскрипция аудио")
         self.root.geometry("700x520")
+        self.root.minsize(500, 400)
         self.root.resizable(True, True)
         self.root.configure(bg="#1e1e2e")
 
@@ -147,6 +148,21 @@ class AppWindow:
         self.text_frame = tk.Frame(self.root, bg="#1e1e2e")
         self.text_frame.pack(fill="both", expand=True, padx=16, pady=(0, 8))
 
+        # Pack button first so it anchors to bottom before text_area claims expand space
+        self.copy_btn = tk.Button(
+            self.text_frame,
+            text="Копировать в буфер",
+            font=("Segoe UI", 11),
+            bg="#89b4fa",
+            fg="#1e1e2e",
+            activebackground="#74c7ec",
+            relief="flat",
+            cursor="hand2",
+            command=self._copy_to_clipboard,
+            pady=6,
+        )
+        self.copy_btn.pack(fill="x", side="bottom", pady=(8, 0))
+
         self.text_area = scrolledtext.ScrolledText(
             self.text_frame,
             wrap="word",
@@ -160,20 +176,6 @@ class AppWindow:
             state="disabled",
         )
         self.text_area.pack(fill="both", expand=True)
-
-        self.copy_btn = tk.Button(
-            self.text_frame,
-            text="Копировать в буфер",
-            font=("Segoe UI", 11),
-            bg="#89b4fa",
-            fg="#1e1e2e",
-            activebackground="#74c7ec",
-            relief="flat",
-            cursor="hand2",
-            command=self._copy_to_clipboard,
-            pady=6,
-        )
-        self.copy_btn.pack(fill="x", padx=16, pady=(0, 16))
 
     def _on_close(self):
         self._running = False
