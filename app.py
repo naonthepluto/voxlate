@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from faster_whisper import WhisperModel
+from version import FULL_LABEL
 
 MODELS = ["tiny", "base", "small", "medium", "large-v3"]
 SUPPORTED_EXTENSIONS = {
@@ -91,6 +92,7 @@ class AppWindow:
         self._build_drop_zone()
         self._build_controls()
         self._build_text_area()
+        self._build_footer()
         self._poll_queue()
 
     # ── Drop zone ────────────────────────────────────────────────────────────
@@ -176,6 +178,17 @@ class AppWindow:
             state="disabled",
         )
         self.text_area.pack(fill="both", expand=True)
+
+    # ── Footer ────────────────────────────────────────────────────────────────
+
+    def _build_footer(self):
+        tk.Label(
+            self.root,
+            text=FULL_LABEL,
+            font=("Segoe UI", 8),
+            fg="#585b70",
+            bg="#1e1e2e",
+        ).pack(side="bottom", pady=(0, 4))
 
     def _on_close(self):
         self._running = False
